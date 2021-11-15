@@ -19,6 +19,9 @@ label,img,input,select,textarea,button{vertical-align:middle;}
 hr{display:none;}
 main,header,section,nav,footer,aside,article,figure{display:block;}
 a{color:#000;text-decoration:none;}
+:-webkit-any(article,aside,nav,section) h1 {
+    font-size: 2em;
+}
  
 /* Form */
 textarea { border:1px solid #dbdbdb;}
