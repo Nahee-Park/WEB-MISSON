@@ -33,7 +33,7 @@ loadScript('/my/script.js', function(error, script) {
 ### 주의할 것
 - resolve / reject 여러 개 있어도 결국 하나만 실행. 
 
-### 새로 알게된 부분
+### 새로 알게된 부분 (중요도 낮음)
 - .then(f,f)으로 받았을 때, resolve함수는 첫번째 함수를, reject함수는 두번째 함수를 실행한다 
 - 성공한 케이스만 받고 싶으면 .then(f)에 하나의 인자만 넣으면 된다
 - 실패한 케이스만 받고 싶으면 .catch(f)로 받거나, .then(n,f)의 첫번째 인자에 null을 넣으면 된다 (catch를 주로 사용하는 이유는 문법상의 간결성 때문!)
@@ -47,9 +47,12 @@ promise.then(f1).catch(f2);
 // 이건 처음부터 정의된 reject함수만 실행시킬 뿐, f1을 수행할 때 난 에러는 받지 못함 
 promise.then(f1, f2);
 ```
+- 같은 스코프의 함수는 에러를 받을 수 없다. 에러가 나면 그 다음 함수가 실행되지 않기 때문 
 
 ## 프로미스 API 
-- 사실 언제 쓰일지 아직 잘 모르겠음. 이런 게 있다 정도로만 알고 넘겨도 될 지
+> **Promise.allSettled 자주 쓰임, all, race도 꽤 빈번히 쓰임! allSettled의 장점은 rejected된 정보도 담겨서 나온다는 거. all같은 경우 하나라도 실패하면 거기서 멈춘다**
+> **promise의 병렬처리가 중요하기 때문에 이 아이들이 중요하다. 3초 걸리는 비동기 함수 1000개를 순차적으로 실행시키면 3000초가 걸리지만, 병렬적으로 실행시키면 3초가 걸린다.**
+
 - `Promise.all(promises)` – 모든 프라미스가 이행될 때까지 기다렸다가 그 결괏값을 담은 배열을 반환합니다. 주어진 프라미스 중 하나라도 실패하면 Promise.all는 거부되고, 나머지 프라미스의 결과는 무시됩니다.
 - `Promise.allSettled(promises)` – 최근에 추가된 메서드로 모든 프라미스가 처리될 때까지 기다렸다가 그 결과(객체)를 담은 배열을 반환합니다. 객체엔 다음과 같은 정보가 담깁니다.
 status: "fulfilled" 또는 "rejected"
@@ -60,13 +63,38 @@ value(프라미스가 성공한 경우) 또는 reason(프라미스가 실패한 
 
 ## 3. async/await 
 
-- async는 무조건 프로미스를 리턴. 일반 리턴값을 보내도 이행 상태의 프로미스를 반환. 물론 프로미스를 리턴해도 예상한대로 동작함. 그렇지만 프로미스 꼴로 리턴할 거면 굳이 async의 형태가 아니어도 되지 않을까
+- async는 무조건 프로미스를 리턴. 일반 리턴값을 보내도 이행 상태의 프로미스를 반환. 물론 프로미스를 리턴해도 예상한대로 동작함. 그렇지만 프로미스 꼴로 리턴할 거면 굳이 async의 형태가 아니어도 되지 않을까 -> await을 안에서 쓰고 싶은 경우에 이렇게 하기도 함! 그렇지만 둘 중 하나만으로도 충분히 해결 가능. 
 - await은 프로미스가 이행(fulfill)될 때까지 기다렸다가 그 값을 리턴함. 
 
 ### 퀴즈 풀면서 들었던 의문점
 - 리턴 값이 없는 async함수는 await의 의미가 없는 게 아닌가 ? 
+    - 리턴 값 없더라도, 해당 async함수에서 다른 곳에 있는 모델이나 형태에 변형을 가하고, 그 변형된 값을 참고하여 어떤 행위를 해야한다면 await가 필요
 - await없이 async함수를 받으면 이행을 기다리지 않고 일단 프로미스를 반환하므로 우선 pending상태를 받는 건가? 그리고 Pending일 때 그 뒤의 애가 굳이 얘를 안 기다리고 실행되고, 이행되었을 때의 값이 나오는 건가 …?
+    - await를 받지 않으면 일단 이행상태가 아니어도 프로미스를 받은 이후에 코드가 실행됨.
+    예시 
+    ```javascript
+
+    const [data,setData] = useState("")
+
+    const getData = async () => {
+        const tempData = await axios.get()
+        setData(tempData)
+    }
+
+    useEffect(()=>{
+        getData() // 여기에 await를 쓰면 뒤의 렌더링 막히므로 백그라운드에서 실행되도록 await를 쓰지 않는다.
+        //다른 어떤 행위들 
+    },[])
+    ```
 - 찾아보니까 나오는 매크로 테스트 큐와 마이크로 테스크 큐의 차이는 뭐지. 둘 다 내가 이벤트큐라고 지칭한 것 안에서 세분화되는 것인가?
+    -> 많이 중요하진 않으므로 읽어만 보기 
+    1. 정의
+        - 마이크로 태스크: 실행하면서 새로운 마이크로 태스크를 큐에 추가할 수도 있음. 새롭게 추가된 마이크로 태스크도 큐가 빌 때까지 계속해서 실행 매크로 
+        - 태스크 큐: 실행 시점이 있는 것만
+    2. 처리하는 일
+        - 매크로: requestAnimationFrame, I/O, UI rendering, setTimeout, setInterval, setImmediate
+        - 마이크로: process.nextTick, Promises, queueMicrotask(f), MutationObserver
+
 
 # 이벤트 루프
 - 기본적으로 자바스크립트 함수는 콜스택에 쌓임으로써 거기서 팝 되어 실행됨
@@ -92,6 +120,30 @@ function asyncForEach(array, cb) {
 asyncForEach([1,2,3,4], function(i){
     console.log(i); 
 });
+```
+
+### 주의 : forEach, map, reduce 내부의 비동기 함수는 의도와 다르게 동작할 수 있다
+```javascript
+const delay = () => { 
+    const randomDelay = Math.floor(Math.random() * 4) * 100 
+    return new Promise(resolve => setTimeout(resolve, randomDelay)) 
+} 
+
+const list = [1, 2, 3, 4, 5] 
+
+// 순서대로
+const printDataSerial = async () => {
+    for (let data of list) {
+        await delay().then(() => console.log(data)) 
+    }
+}
+
+// 순서 무작위  => forEach가 불리는 시점에 한번에 다 프로미스가 실행되어버림 (병렬적으로)
+const printDataPare = async () => {
+    list.forEach(async data => { 
+        await delay().then(() => console.log(data)) 
+    })
+}
 ```
 
 ## js엔진이 await을 만났을 때
@@ -187,11 +239,48 @@ const d = async () => {
     console.log(3)
 }
 
-const e = async () => {
+const l = async () => {
     console.log(1)
     await delayTimeOut('첫번째', 1002)
     console.log(2)
     await delayPromise('첫번째')
     console.log(3)
 }
+```
+# 최종적으로 이벤트루프 정리
+1. await을 만나면 일단 async함수가 그 시점에서 멈춘다. (await 걸려있는 함수가 끝날 때까지, 리턴값이 없으면 매우 빨리 다시 풀린다)
+2. web api를 이용하는 이벤트는(setTimeout등) web Api에서 해당 이벤트가 실행되고(시간이 끝날 때까지 web api의 구역에 있음), 이벤트가 끝난 시점에 이벤트 큐에 담긴다
+3. 이벤트 큐의 우선순위는 매우 낮다. 콜스택이 비어있어서 이벤트 큐에서 퐁 튀어나가려는 시점에 콜스택에 무언가 들어오면 이벤트 큐는 그 후순위로 밀린다.
+
+# 비동기함수의 병렬적 처리
+```javascript
+let num = 1
+
+const wait = (time) => {
+	return new Promise((res) => {
+		setTimeout(() => {
+			console.log(num ++ )
+			res()
+		}, time)
+	})
+}
+
+async function a() {
+  await wait(1000);
+  console.log('지나가는중')
+  await wait(2000);//2
+  console.log('done')
+}
+
+// 불리는 동시에 실행된다.
+async function b() {
+  const wait1 = wait(1000); 이행
+  const wait2 = wait(2000); 이행
+  await wait1;
+  console.log('지나가는중')
+  await wait2;
+  console.log('done')
+}
+
+a()
 ```
