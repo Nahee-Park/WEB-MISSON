@@ -25,11 +25,3 @@ ul{
 .item img{
     width: 500px;
 }
-
-.show{
-    visibility: visible;
-}
-
-.hidden{
-    visibility: hidden;
-}
