@@ -32,7 +32,7 @@ const createCarouselItem = () =>{
     })
 }
 
-const slideItem = async (type) => {
+const slideItem =  (type) => {
     let newPosition;
     if (type==="prev") {
         newPosition = position+IMG_WIDTH;
@@ -48,8 +48,8 @@ const transformItem = () => {
     item.style.transform = `translateX(${position}px)`;
 }
 
-const prev = async () => {
-    position = await slideItem("prev");
+const prev =  () => {
+    position =  slideItem("prev");
     if(currentItem === FIRST_INDEX) {
         currentItem = LAST_INDEX;
         position= -IMG_WIDTH*imageArray.length;
@@ -58,8 +58,8 @@ const prev = async () => {
     }
     transformItem();
 }
-const next = async () => {
-    position = await slideItem("next");
+const next =  () => {
+    position =  slideItem("next");
     if(currentItem === LAST_INDEX) {
         currentItem = FIRST_INDEX;
         position= -IMG_WIDTH;
